@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Beranda Gabungan</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      transition: background-color 0.5s, color 0.5s;
+      text-align: center;
+    }
+
+    body.day {
+      background-color: white;
+      color: black;
+      --card-bg: #f2f2f2;
+      --text-color: black;
+    }
+
+    body.night {
+      background-color: #222;
+      color: white;
+      --card-bg: #f2f2f2;
+      --text-color: black;
+    }
+
+    #particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    .container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+    }
+
+    .clock {
+      font-size: 40px;
+      font-weight: bold;
+      display: flex;
+      align-items: baseline;
+    }
+
+    .separator {
+      font-size: 30px;
+      margin: 0 2px;
+    }
+
+    .seconds-container {
+      display: flex;
+      align-items: baseline;
+    }
+
+    .seconds-separator {
+      font-size: 15px;
+      margin: 0 2px;
+    }
+
+    .seconds {
+      font-size: 18px;
+    }
+
+    .date {
+      font-size: 16px;
+      margin-top: 5px;
+    }
+
+    .search-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 70%;
+      display: flex;
+      align-items: center;
+      background-color: black;
+      border-radius: 30px;
+      padding: 5px;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.5s;
+    }
+
+    .search-icon {
+      width: 20px;
+      height: 20px;
+      margin: 0 10px;
+      transition: fill 0.5s;
+      cursor: pointer;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 8px;
+      font-size: 16px;
+      border: none;
+      background: transparent;
+      color: white;
+      text-align: left;
+      outline: none;
+    }
+
+    .search-icon-png {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 40px;
+      display: none;
+    }
+
+    /* Cuaca */
+    #weatherBox {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    #locationModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 300px;
+      text-align: center;
+    }
+
+    #cityInput {
+      width: 90%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    #searchBtn {
+      background-color: #959595;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    #statusText {
+      font-size: 13px;
+      margin-top: 10px;
+      color: #555;
+    }
+
+    /* Grid Menu */
+    .app-button {
+      width: 50px;
+      height: 50px;
+      background-color: #919191;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 1001;
+      cursor: pointer;
+    }
+
+    .grid-menu {
+      position: fixed;
+      bottom: 80px;
+      left: 20px;
+      right: 20px;
+      max-height: 140px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      padding: 20px;
+      border-radius: 10px;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      overflow-y: auto;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(4, 50px);
+      grid-gap: 15px;
+    }
+
+    .grid-item {
+      width: 50px;
+      height: 50px;
+      border: 2px solid #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      background-color: white;
+      overflow: hidden;
+      text-decoration: none;
+      color: black;
+      position: relative;
+    }
+
+    .grid-item img {
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+    }
+
+    .plus {
+      font-weight: bold;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="particles-js"></div>
+
+  <!-- Cuaca -->
+  <div id="weatherBox">🌤️ Lihat Cuaca</div>
+  <div id="locationModal">
+    <div class="modal-content">
+      <p>Ketik nama daerah:</p>
+      <input type="text" id="cityInput" placeholder="Cari lokasi">
+      <button id="searchBtn">Cari</button>
+      <p id="statusText"></p>
+    </div>
+  </div>
+
+  <!-- Jam dan Tanggal -->
+  <div class="container">
+    <div class="clock">
+      <span id="hours">00</span><span class="separator">:</span><span id="minutes">00</span>
+      <div class="seconds-container"><span class="seconds-separator">:</span><span class="seconds" id="seconds">00</span></div>
+    </div>
+    <div class="date" id="date">Hari, 1 Januari 2025</div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-container" id="searchContainer">
+    <div class="search-icon-png" id="sunIcon" style="font-size: 32px;">☀️</div>
+    <div class="search-icon-png" id="moonIcon" style="font-size: 32px;">🌙</div>
+    <svg class="search-icon" id="searchIcon" viewBox="0 0 24 24" onclick="searchGoogle()">
+      <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 17 9.5 6.5 6.5 0 1 0 10.5 16a6.471 6.471 0 0 0 4.23-1.57l.27.28v.79l5 5L20.5 19l-5-5zM10.5 14A4.5 4.5 0 1 1 15 9.5 4.5 4.5 0 0 1 10.5 14z"/>
+    </svg>
+    <input type="text" id="searchBox" class="search-box" placeholder="Telusuri..." onkeypress="handleKeyPress(event)">
+  </div>
+
+  <!-- Grid Menu -->
+  <div class="app-button" onclick="toggleGrid()">☰</div>
+  <div class="grid-menu" id="gridMenu">
+    <div class="grid-container" id="gridContainer"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script>
+    // Jam, Tema, Search, Partikel
+    let lastIsDay = null;
+
+    function setParticlesColor(color) {
+      if (window.pJSDom && window.pJSDom.length > 0) {
+        window.pJSDom[0].pJS.fn.vendors.destroypJS();
+        window.pJSDom = [];
+      }
+      particlesJS("particles-js", {
+        particles: {
+          number: { value: 60 },
+          color: { value: color },
+          shape: { type: "circle" },
+          opacity: { value: 0.5, random: true },
+          size: { value: 3, random: true },
+          line_linked: {
+            enable: true,
+            distance: 150,
+            color: color,
+            opacity: 0.4,
+            width: 1
+          },
+          move: { enable: true, speed: 2 }
+        },
+        interactivity: {
+          events: { onhover: { enable: true, mode: "grab" } },
+          modes: { grab: { distance: 200, line_linked: { opacity: 0.5 } } }
+        },
+        retina_detect: true
+      });
+    }
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("hours").textContent = String(now.getHours()).padStart(2, '0');
+      document.getElementById("minutes").textContent = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById("seconds").textContent = String(now.getSeconds()).padStart(2, '0');
+
+      const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      document.getElementById("date").textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+      const isDay = now.getHours() >= 6 && now.getHours() < 18;
+      document.body.classList.toggle("day", isDay);
+      document.body.classList.toggle("night", !isDay);
+
+      const sunIcon = document.getElementById("sunIcon");
+      const moonIcon = document.getElementById("moonIcon");
+      const searchContainer = document.getElementById("searchContainer");
+      const searchBox = document.getElementById("searchBox");
+      const searchIcon = document.getElementById("searchIcon");
+
+      if (isDay) {
+        searchContainer.style.backgroundColor = "black";
+        searchBox.style.color = "white";
+        searchIcon.style.fill = "white";
+        sunIcon.style.display = "block";
+        moonIcon.style.display = "none";
+      } else {
+        searchContainer.style.backgroundColor = "white";
+        searchBox.style.color = "black";
+        searchIcon.style.fill = "black";
+        sunIcon.style.display = "none";
+        moonIcon.style.display = "block";
+      }
+
+      if (lastIsDay !== isDay) {
+        setParticlesColor(isDay ? "#333333" : "#ffffff");
+        lastIsDay = isDay;
+      }
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function searchGoogle() {
+      let query = document.getElementById("searchBox").value.trim();
+      if (query) window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === "Enter") searchGoogle();
+    }
+
+    // Cuaca
+    const weatherBox = document.getElementById('weatherBox');
+    const locationModal = document.getElementById('locationModal');
+    const cityInput = document.getElementById('cityInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const statusText = document.getElementById('statusText');
+
+    weatherBox.addEventListener('click', () => locationModal.style.display = 'flex');
+    locationModal.addEventListener('click', (e) => {
+      if (e.target === locationModal) {
+        locationModal.style.display = 'none';
+        cityInput.value = "";
+        statusText.textContent = "";
+      }
+    });
+
+    searchBtn.addEventListener('click', () => {
+      const city = cityInput.value.trim();
+      if (!city) return statusText.textContent = "Masukkan nama daerah.";
+      statusText.textContent = "Mencari lokasi...";
+      fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.length === 0) return statusText.textContent = "Lokasi tidak ditemukan.";
+          const lat = data[0].lat;
+          const lon = data[0].lon;
+          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`)
+            .then(res => res.json())
+            .then(data => {
+              const suhu = data.current_weather.temperature;
+              const kode = data.current_weather.weathercode;
+              const deskripsi = getWeatherDescription(kode);
+              weatherBox.innerHTML = `🌤️ ${city}<br>${suhu}°C<br>${deskripsi}`;
+              locationModal.style.display = 'none';
+              cityInput.value = "";
+              statusText.textContent = "";
+            })
+            .catch(() => statusText.textContent = "Gagal mengambil data cuaca.");
+        })
+        .catch(() => statusText.textContent = "Gagal mengambil lokasi.");
+    });
+
+    function getWeatherDescription(code) {
+      const desc = {
+        0: "Cerah", 1: "Sebagian Berawan", 2: "Berawan", 3: "Berawan Tebal",
+        45: "Berkabut", 48: "Kabut Beku", 51: "Gerimis Ringan", 61: "Hujan Ringan",
+        71: "Salju Ringan", 80: "Hujan Lokal", 95: "Badai Petir"
+      };
+      return desc[code] || "Tidak diketahui";
+    }
+
+    // Grid Menu
+    const gridContainer = document.getElementById('gridContainer');
+    let plusButton;
+
+    function toggleGrid() {
+      const menu = document.getElementById('gridMenu');
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function loadShortcuts() {
+      const saved = localStorage.getItem('shortcuts');
+      return saved ? JSON.parse(saved) : [];
+    }
+
+    function saveShortcuts(data) {
+      localStorage.setItem('shortcuts', JSON.stringify(data));
+    }
+
+    function initGrid() {
+      const defaultApps = [
+        { href: "sosial-media.html", label: "Sosial Media", icon: "sosial-media.png" },
+        { href: "game.html", label: "Game", icon: "game.png" },
+        { href: "countdown.html", label: "Countdown", icon: "countdown.png" },
+        { href: "tentang.html", label: "Tentang", icon: "tentang.png" }
+      ];
+      defaultApps.forEach(app => {
+        const item = createGridItem(app.href, app.label, app.icon, false);
+        gridContainer.appendChild(item);
+      });
+
+      const savedShortcuts = loadShortcuts();
+      savedShortcuts.forEach(app => {
+        const item = createGridItem(app.href, app.label, app.icon, true);
+        gridContainer.appendChild(item);
+      });
+
+      plusButton = document.createElement('div');
+      plusButton.className = 'grid-item plus';
+      plusButton.textContent = '+';
+      plusButton.onclick = addShortcut;
+      gridContainer.appendChild(plusButton);
+    }
+
+    function createGridItem(href, label, iconUrl, external = true) {
+      const link = document.createElement('a');
+      link.href = href;
+      link.className = 'grid-item';
+      if (external) link.target = '_blank';
+
+      const img = document.createElement('img');
+      img.src = iconUrl;
+      img.alt = label;
+
+      const title = document.createElement('div');
+      title.className = 'card-title';
+      title.textContent = label;
+
+      link.appendChild(img);
+      link.appendChild(title);
+
+      let pressTimer = null;
+      let longPressed = false;
+
+      const startPress = () => {
+        longPressed = false;
+        pressTimer = setTimeout(() => {
+          longPressed = true;
+          confirmDelete(link, href, label, iconUrl);
+        }, 600);
+      };
+
+      const cancelPress = (e) => {
+        clearTimeout(pressTimer);
+        if (e.type === 'click' && !longPressed && external) {
+          window.open(href, '_blank');
+        }
+      };
+
+      link.addEventListener('mousedown', startPress);
+      link.addEventListener('mouseup', cancelPress);
+      link.addEventListener('mouseout', cancelPress);
+      link.addEventListener('touchstart', startPress);
+      link.addEventListener('touchend', cancelPress);
+
+      return link;
+    }
+
+    function addShortcut() {
+  const url = prompt("Masukkan URL:");
+  if (!url) return;
+  const label = prompt("Masukkan label:");
+  if (!label) return;
+  const icon = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}`;
+  const shortcuts = loadShortcuts();
+  shortcuts.push({ href: url, label, icon });
+  saveShortcuts(shortcuts);
+  const item = createGridItem(url, label, icon);
+  gridContainer.insertBefore(item, plusButton);
+}
+
+
+    function confirmDelete(item, href, label, icon) {
+      if (confirm("Hapus pintasan ini?")) {
+        item.remove();
+        const shortcuts = loadShortcuts().filter(app => !(app.href === href && app.label === label));
+        saveShortcuts(shortcuts);
+      }
+    }
+
+    initGrid();
+  </script>
+</body>
+</html>

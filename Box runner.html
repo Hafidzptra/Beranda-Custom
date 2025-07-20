@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dino Runner (High Score)</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f7f7f7;
+            font-family: 'Courier New', Courier, monospace;
+            flex-direction: column;
+            text-align: center;
+        }
+        #game-container {
+            border: 2px solid #333;
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+        }
+        #game-board {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        #score-container {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 800px;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        #info-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            color: #555;
+            white-space: pre; 
+        }
+    </style>
+</head>
+<body>
+    <div id="score-container">
+        <div id="high-score">High Score: 0</div>
+        <div id="current-score">Skor: 0</div>
+    </div>
+    <div id="game-container">
+        <canvas id="game-board"></canvas>
+        <div id="info-text">Tekan Spasi atau Tap
+        untuk Mulai</div>
+    </div>
+
+    <script>
+        // --- Setup Awal ---
+        const gameContainer = document.getElementById('game-container');
+        const gameBoard = document.getElementById('game-board');
+        const ctx = gameBoard.getContext('2d');
+        const currentScoreElement = document.getElementById('current-score');
+        const highScoreElement = document.getElementById('high-score');
+        const infoText = document.getElementById('info-text');
+
+        const boardWidth = 800;
+        const boardHeight = 250;
+        gameBoard.width = boardWidth;
+        gameBoard.height = boardHeight;
+
+        // --- Variabel Game ---
+        let dino, obstacles, score, highScore, gameOver, gameSpeed, gravity;
+        let gameStarted = false;
+
+        // --- Muat High Score dari Penyimpanan Browser ---
+        highScore = localStorage.getItem('dinoHighScore') || 0;
+        highScoreElement.textContent = `High Score: ${highScore}`;
+
+        // --- Objek Dino ---
+        function createDino() {
+            return {
+                x: 50,
+                y: boardHeight - 50,
+                width: 40,
+                height: 50,
+                velocityY: 0,
+                isJumping: false
+            };
+        }
+
+        // --- Inisialisasi Game ---
+        function init() {
+            dino = createDino();
+            obstacles = [];
+            score = 0;
+            gameOver = false;
+            gameStarted = true;
+            gameSpeed = 5;
+            gravity = 0.6;
+            
+            currentScoreElement.textContent = "Skor: 0";
+            infoText.style.display = 'none';
+            
+            spawnObstacle();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Fungsi Aksi ---
+        function jump() {
+            if (!dino.isJumping) {
+                dino.isJumping = true;
+                dino.velocityY = -15;
+            }
+        }
+
+        function handlePlayerAction() {
+            if (!gameStarted) {
+                init();
+            } else if (gameOver) {
+                init();
+            } else {
+                jump();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                handlePlayerAction();
+            }
+        });
+        document.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handlePlayerAction();
+        });
+
+        // --- Logika Rintangan ---
+        function spawnObstacle() {
+            obstacles.push({
+                x: boardWidth,
+                y: boardHeight - 40,
+                width: 20,
+                height: 40,
+                passed: false
+            });
+        }
+        
+        let frameCount = 0;
+        function gameLoop() {
+            if (gameOver) {
+                // Tampilkan pesan Game Over dan cek High Score
+                infoText.innerText = "GAME OVER\nTekan Spasi atau Tap untuk Ulang";
+                infoText.style.display = 'block';
+                checkHighScore();
+                return; // Hentikan loop
+            }
+            
+            update();
+            draw();
+            
+            if (frameCount % 200 === 0) {
+                gameSpeed += 0.2;
+            }
+
+            frameCount++;
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- FUNGSI BARU UNTUK CEK DAN SIMPAN HIGH SCORE ---
+        function checkHighScore() {
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('dinoHighScore', highScore); // Simpan ke browser
+                highScoreElement.textContent = `High Score: ${highScore}`;
+            }
+        }
+
+        function update() {
+            // Logika lompatan dan gravitasi
+            if (dino.isJumping) {
+                dino.velocityY += gravity;
+                dino.y += dino.velocityY;
+            }
+            if (dino.y >= boardHeight - dino.height) {
+                dino.y = boardHeight - dino.height;
+                dino.isJumping = false;
+                dino.velocityY = 0;
+            }
+
+            // Gerakkan dan spawn rintangan
+            if (frameCount % Math.floor(Math.random() * (120 - 60) + 60) === 0) {
+                 if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < boardWidth - 250) {
+                    spawnObstacle();
+                 }
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                let obs = obstacles[i];
+                obs.x -= gameSpeed;
+
+                if (dino.x < obs.x + obs.width && dino.x + dino.width > obs.x && dino.y < obs.y + obs.height && dino.y + dino.height > obs.y) {
+                    gameOver = true;
+                    gameStarted = false;
+                }
+                
+                if (obs.x + obs.width < dino.x && !obs.passed) {
+                    score++;
+                    obs.passed = true;
+                    currentScoreElement.textContent = `Skor: ${score}`;
+                }
+
+                if (obs.x + obs.width < 0) {
+                    obstacles.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, boardWidth, boardHeight);
+            // Garis Tanah
+            ctx.beginPath();
+            ctx.moveTo(0, boardHeight - 1);
+            ctx.lineTo(boardWidth, boardHeight - 1);
+            ctx.strokeStyle = '#333';
+            ctx.stroke();
+            // Dino
+            if (dino) {
+                ctx.fillStyle = '#666';
+                ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
+            }
+            // Rintangan
+            ctx.fillStyle = '#ff0000';
+            for (const obs of obstacles) {
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            }
+        }
+
+        function drawInitialState() {
+             ctx.clearRect(0, 0, boardWidth, boardHeight);
+             ctx.beginPath();
+             ctx.moveTo(0, boardHeight - 1);
+             ctx.lineTo(boardWidth, boardHeight - 1);
+             ctx.strokeStyle = '#333';
+             ctx.stroke();
+             let initialDino = createDino();
+             ctx.fillStyle = '#666';
+             ctx.fillRect(initialDino.x, initialDino.y, initialDino.width, initialDino.height);
+        }
+
+        drawInitialState();
+    </script>
+</body>
+</html>

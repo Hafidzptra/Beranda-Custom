@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Stack Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    canvas {
+      display: block;
+    }
+    #ui-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+    }
+    #score {
+      font-size: 4em;
+      font-weight: bold;
+    }
+    #results {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 30px;
+      border-radius: 15px;
+    }
+    #results h1 {
+      margin: 0 0 10px 0;
+      font-size: 3em;
+    }
+    #results h2 {
+      margin: 0 0 20px 0;
+      font-size: 1.5em;
+    }
+    #restart-button {
+      padding: 15px 30px;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 8px;
+      background-color: #f1c40f;
+      color: #2c3e50;
+      cursor: pointer;
+      pointer-events: all;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+    #restart-button:hover {
+      background-color: #f39c12;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui-container">
+    <div id="score">0</div>
+    <div id="results">
+      <h1>GAME OVER</h1>
+      <h2 id="final-score">Skor Kamu: 0</h2>
+      <button id="restart-button">Mulai Lagi</button>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.165.0/build/three.module.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    const scoreElement = document.getElementById('score');
+    const resultsElement = document.getElementById('results');
+    const finalScoreElement = document.getElementById('final-score');
+    const restartButton = document.getElementById('restart-button');
+
+    let score = 0;
+    let gamePhase = 'loading';
+    const stack = [];
+    const overhangs = [];
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x2c3e50);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 100);
+    camera.position.set(4, 5, 4);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(10, 20, 0);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+    function startGame() {
+      gamePhase = 'playing';
+      score = 0;
+      scoreElement.innerText = '0';
+      resultsElement.style.display = 'none';
+
+      stack.forEach(block => scene.remove(block.mesh));
+      overhangs.forEach(block => scene.remove(block.mesh));
+      stack.length = 0;
+      overhangs.length = 0;
+
+      // Balok pertama (diam)
+      addLayer(0, 0, 0, 2, 2, 'base');
+
+      // Balok kedua (bergerak dari kiri)
+      addLayer(-10, 1, 0, 2, 2, 'active');
+      const active = stack[stack.length - 1];
+      active.direction = 'x';
+      active.nextDirection = 'z';
+    }
+
+    function addLayer(x, y, z, width, depth, type) {
+      const height = 1;
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const color = new THREE.Color().setHSL(0.1 + stack.length * 0.02, 0.8, 0.6);
+      const material = new THREE.MeshLambertMaterial({ color });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      scene.add(mesh);
+
+      const block = {
+        mesh,
+        width,
+        depth,
+        direction: null,
+        nextDirection: null,
+        speed: type === 'active' ? 0.05 + score * 0.002 : 0
+      };
+      stack.push(block);
+    }
+
+    function addOverhang(x, y, z, width, depth) {
+      const height = 1;
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const lastBlock = stack[stack.length - 1];
+      const material = lastBlock?.mesh.material || new THREE.MeshLambertMaterial({ color: 0xff0000 });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      scene.add(mesh);
+      overhangs.push({ mesh, fallSpeed: 0, rotationSpeed: Math.random() * 0.05 - 0.025 });
+    }
+
+    function placeBlock() {
+      if (gamePhase !== 'playing' || stack.length < 2) return;
+
+      const activeBlock = stack[stack.length - 1];
+      const prevBlock = stack[stack.length - 2];
+      const direction = activeBlock.direction;
+
+      const delta = activeBlock.mesh.position[direction] - prevBlock.mesh.position[direction];
+      const overlap = (direction === 'x' ? prevBlock.width : prevBlock.depth) - Math.abs(delta);
+
+      if (overlap <= 0) {
+        endGame();
+        return;
+      }
+
+      const newWidth = direction === 'x' ? overlap : prevBlock.width;
+      const newDepth = direction === 'z' ? overlap : prevBlock.depth;
+
+      activeBlock.width = newWidth;
+      activeBlock.depth = newDepth;
+      activeBlock.mesh.scale[direction] = overlap / (direction === 'x' ? prevBlock.width : prevBlock.depth);
+      activeBlock.mesh.position[direction] = prevBlock.mesh.position[direction] + delta / 2;
+      activeBlock.speed = 0;
+
+      const overhangSize = (direction === 'x' ? prevBlock.width : prevBlock.depth) - overlap;
+      const overhangPos = activeBlock.mesh.position[direction] + (overlap / 2) * Math.sign(delta) + (overhangSize / 2) * Math.sign(delta);
+
+      addOverhang(
+        direction === 'x' ? overhangPos : activeBlock.mesh.position.x,
+        activeBlock.mesh.position.y,
+        direction === 'z' ? overhangPos : activeBlock.mesh.position.z,
+        direction === 'x' ? overhangSize : newWidth,
+        direction === 'z' ? overhangSize : newDepth
+      );
+
+      score++;
+      scoreElement.innerText = score;
+
+      const nextDirection = activeBlock.nextDirection || (direction === 'x' ? 'z' : 'x');
+      const startPos = 10;
+      const nextX = nextDirection === 'x' ? -startPos : activeBlock.mesh.position.x;
+      const nextZ = nextDirection === 'z' ? -startPos : activeBlock.mesh.position.z;
+
+      addLayer(nextX, score, nextZ, newWidth, newDepth, 'active');
+      const nextBlock = stack[stack.length - 1];
+      nextBlock.direction = nextDirection;
+      nextBlock.nextDirection = nextDirection === 'x' ? 'z' : 'x';
+      nextBlock.mesh.position.set(nextX, score, nextZ);
+    }
+
+    function endGame() {
+      gamePhase = 'ended';
+      const lastBlock = stack.pop();
+      if (lastBlock) {
+        scene.remove(lastBlock.mesh);
+        addOverhang(lastBlock.mesh.position.x, lastBlock.mesh.position.y, lastBlock.mesh.position.z, lastBlock.width, lastBlock.depth);
+      }
+      resultsElement.style.display = 'flex';
+      finalScoreElement.innerText = `Skor Kamu: ${score}`;
+    }
+
+    window.addEventListener('mousedown', placeBlock);
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') placeBlock();
+    });
+    restartButton.addEventListener('click', startGame);
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (gamePhase === 'playing') {
+        const activeBlock = stack[stack.length - 1];
+        activeBlock.mesh.position[activeBlock.direction] += activeBlock.speed;
+
+        if (Math.abs(activeBlock.mesh.position[activeBlock.direction]) > 10) {
+          activeBlock.speed *= -1;
+        }
+
+        camera.position.y = THREE.MathUtils.lerp(camera.position.y, score * 1 + 5, 0.05);
+      }
+
+      overhangs.forEach(block => {
+        block.fallSpeed += 0.01;
+        block.mesh.position.y -= block.fallSpeed;
+        block.mesh.rotation[block.mesh.position.x > 0 ? 'z' : 'x'] += block.rotationSpeed;
+        if (block.mesh.position.y < -10) scene.remove(block.mesh);
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    startGame();
+    animate();
+  </script>
+</body>
+</html>

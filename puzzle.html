@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>15 Puzzle</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        #game-container {
+            width: 400px;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 5px solid #333;
+            background-color: #fff;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 5px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .tile {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: #8c8c8c;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .tile.empty {
+            background-color: #f0f0f0;
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="grid"></div>
+    </div>
+    <script>
+        const grid = document.getElementById('grid');
+        const GRID_SIZE = 4;
+
+        // Membuat array angka 1-15 dan satu slot kosong
+        let tiles = [...Array(GRID_SIZE * GRID_SIZE - 1).keys()].map(x => x + 1);
+        tiles.push(0); // Tambahkan kotak kosong
+        shuffle(tiles); // Acak posisi awal
+
+        // Membuat grid puzzle
+        function renderGrid() {
+            grid.innerHTML = '';
+            tiles.forEach((tile, index) => {
+                const tileElement = document.createElement('div');
+                tileElement.classList.add('tile');
+                if (tile === 0) {
+                    tileElement.classList.add('empty');
+                } else {
+                    tileElement.textContent = tile;
+                }
+                tileElement.addEventListener('click', () => moveTile(index));
+                grid.appendChild(tileElement);
+            });
+        }
+
+        // Mengacak posisi puzzle
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Mencari indeks kotak kosong
+        function findEmpty() {
+            return tiles.indexOf(0);
+        }
+
+        // Menggeser kotak jika valid
+        function moveTile(index) {
+            const emptyIndex = findEmpty();
+            const [x1, y1] = [index % GRID_SIZE, Math.floor(index / GRID_SIZE)];
+            const [x2, y2] = [emptyIndex % GRID_SIZE, Math.floor(emptyIndex / GRID_SIZE)];
+
+            // Cek apakah bisa dipindah
+            if (Math.abs(x1 - x2) + Math.abs(y1 - y2) === 1) {
+                [tiles[index], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[index]];
+                renderGrid();
+
+                // Cek apakah sudah menang
+                if (isSolved()) {
+                    setTimeout(() => alert('You win!'), 100);
+                }
+            }
+        }
+
+        // Mengecek apakah puzzle sudah selesai
+        function isSolved() {
+            for (let i = 0; i < tiles.length - 1; i++) {
+                if (tiles[i] !== i + 1) return false;
+            }
+            return true;
+        }
+
+        // Render awal
+        renderGrid();
+    </script>
+</body>
+</html>

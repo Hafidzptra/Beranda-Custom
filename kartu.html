@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kartu Geser</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow-x: hidden; /* Mencegah scroll horizontal */
+      font-family: Arial, sans-serif;
+      transition: background-color 0.5s, color 0.5s;
+      position: relative;
+    }
+
+    body.day {
+      background-color: #ffffff;
+      --card-bg: #f2f2f2;
+      --text-color: #000000;
+    }
+
+    body.night {
+      background-color: #000000;
+      --card-bg: #f2f2f2;
+      --text-color: #000000;
+    }
+
+    .icon-toggle {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 26px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      z-index: 100;
+      transition: color 0.3s ease;
+    }
+
+    body.day .icon-toggle {
+      color: #000000;
+    }
+
+    body.night .icon-toggle {
+      color: #ffffff;
+    }
+
+    .slider-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      max-width: 300px;
+      overflow: hidden; /* Mencegah keluar dari batas layar */
+      display: none;
+      transition: opacity 0.5s ease;
+    }
+
+    .slider-container.show {
+      display: block;
+      opacity: 1;
+    }
+
+    .card-slider {
+      display: flex;
+      transition: transform 0.3s ease;
+      gap: 16px;
+      padding: 0 16px;
+    }
+
+    .card {
+      flex: 0 0 250px;
+      height: 340px;
+      border-radius: 20px;
+      background-color: var(--card-bg);
+      color: var(--text-color);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: background-color 0.5s, color 0.5s;
+      border:3px solid;
+    }
+
+    .card img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin-bottom: 16px;
+      border: 3px solid var(--text-color);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .indicator-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 12px;
+    }
+
+    .indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #ccc;
+      margin: 0 5px;
+      transition: background-color 0.3s ease;
+      border: 1px solid white;
+    }
+
+    .indicator.active {
+      background-color: var(--text-color);
+    }
+  </style>
+</head>
+<body>
+  <button class="icon-toggle" id="toggleBtn">☰</button>
+
+  <div class="slider-container" id="sliderContainer">
+    <div class="card-slider" id="cardSlider">
+      <a href="kartu/page1.html" class="card">
+        <img src="ikon/sosial media.png" alt="Logo A">
+        <div class="card-title">Sosial media</div>
+      </a>
+      <a href="https://open.spotify.com/playlist/6xtAmJHs40FO1Jq5KIBBTI?si=wFc621_aRUikk6NtwxFyVQ&pt=581d613b3d6de4c2ad92652ff4e8f079&pi=UIT1C6ypTpCFs" class="card">
+        <img src="ikon/Spotify.png" alt="Logo B">
+        <div class="card-title">Playlist Spotify</div>
+      </a>
+      <a href="kartu/Game.html" class="card">
+        <img src="ikon/Game.png" alt="Logo C">
+        <div class="card-title">Game</div>
+      </a>
+      <a href="kartu/count day v.2.html" class="card">
+        <img src="ikon/Countdown.png" alt="Logo C">
+        <div class="card-title">Countday</div>
+      </a>
+      <a href="kartu/tentang web.html" class="card">
+        <img src="ikon/tentang.png" alt="Logo C">
+        <div class="card-title">Tentang website</div>
+      </a>
+    </div>
+    <div class="indicator-container" id="indicatorContainer">
+      <div class="indicator"></div>
+      <div class="indicator"></div>
+      <div class="indicator"></div>
+      <div class="indicator"></div>
+      <div class="indicator"></div>
+    </div>
+  </div>
+
+  <script>
+    const toggleBtn = document.getElementById('toggleBtn');
+    const sliderContainer = document.getElementById('sliderContainer');
+    const slider = document.getElementById('cardSlider');
+    const indicators = document.querySelectorAll('.indicator');
+    const total = slider.children.length;
+    let startX = 0;
+    let currentIndex = 0;
+
+    toggleBtn.addEventListener('click', () => {
+      sliderContainer.classList.toggle('show');
+    });
+
+    slider.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+    }, { passive: true });
+
+    slider.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+
+    slider.addEventListener('touchend', (e) => {
+      const endX = e.changedTouches[0].clientX;
+      const diff = endX - startX;
+
+      if (diff > 50 && currentIndex > 0) currentIndex--;
+      else if (diff < -50 && currentIndex < total - 1) currentIndex++;
+
+      slider.style.transform = `translateX(-${(currentIndex * (250 + 16))}px)`;
+      updateIndicator(currentIndex);
+    }, { passive: false });
+
+    function updateIndicator(index) {
+      indicators.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+      });
+    }
+
+    updateIndicator(currentIndex);
+
+    function updateThemeByTime() {
+      const hour = new Date().getHours();
+      const isDay = hour >= 6 && hour < 18;
+      document.body.classList.toggle('day', isDay);
+      document.body.classList.toggle('night', !isDay);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      updateThemeByTime();
+      setInterval(updateThemeByTime, 5 * 60 * 1000);
+    });
+  </script>
+</body>
+</html>
